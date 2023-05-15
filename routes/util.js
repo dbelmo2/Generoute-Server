@@ -3,11 +3,12 @@ const NodeGeocoder = require('node-geocoder');
 const turf = require('@turf/turf');
 const axios = require('axios');
 
-const directionsBaseUrl = 'https://api.mapbox.com/directions/v5/mapbox/walking';
-const startPoint = [-87.88592846064543, 41.879536552845245];
-const fixedDistance = 1; // 1km
+const config = require('../config.json');
+const keys = require('../keys.json');
 
+const directionsBaseUrl = 'https://api.mapbox.com/directions/v5/mapbox/walking';
 const OVERPASS_INTERPRETER_API = process.env.OVERPASS_INTERPRETER_API || 'http://overpass-api.de/api/interpreter?data=';
+const { PUBLIC_LAND_USE } = config;
 
 const geocoder = NodeGeocoder({
   provider: 'openstreetmap',
@@ -27,7 +28,7 @@ const generateCoord = async (address) => {
     const { latitude, longitude } = results[0];
     return { latitude, longitude };
   } catch (error) {
-    console.log(error);
+    console.log(error.message);
   }
 };
 
@@ -63,19 +64,29 @@ const generateDistanceRoute = async (req, res) => {
 };
 
 // Generate a random point within a fixed distance from the starting point
-function getRandomPointWithinDistance() {
+function getRandomPointWithinDistance(startPoint, fixedDistance) {
   const bearing = Math.random() * 360; // random bearing in degrees
   const options = { units: 'kilometers' };
   return turf.destination(startPoint, fixedDistance, bearing, options).geometry.coordinates;
 }
 
 // Connect points with walkable routes
-const connectPointsWithRoutes = async (points) => {
+async function connectPointsWithRoutes(points) {
   const coordinates = points.map((point) => point.join(',')).join(';');
-  const response = await fetch(`${directionsBaseUrl}/${coordinates}?geometries=geojson&access_token=${mapboxgl.accessToken}`);
-  const data = await response.json();
+  let response;
+  let data;
+  console.log('Coordinates:');
+  console.log(coordinates);
+  try {
+    response = await axios.get(`${directionsBaseUrl}/${coordinates}?geometries=geojson&access_token=${keys.MAPBOX}`);
+    data = response.data;
+  } catch (error) {
+    console.log(`Error when calling Mapbox Directions API: ${error.message}`);
+    console.log(JSON.stringify(error.response?.data));
+    throw error;
+  }
   return data.routes[0].geometry.coordinates;
-};
+}
 
 /**
  * Returns the landuse value of the location which the provided coordiantes map to.
@@ -94,15 +105,87 @@ const getLandUseData = async (latitude, longitude) => {
     const response = await axios.get(`${OVERPASS_INTERPRETER_API}${encodeURIComponent(overpassQuery)}`);
     landuse = response.data.elements[1]?.tags.landuse; // TODO: Refactor to iterate all elements and search for landuse?
   } catch (error) {
-    console.log(error);
+    console.log(`Error when calling OverPass API: ${error.message}`);
+    console.log(JSON.stringify(error.response?.data));
     throw error;
   }
   return landuse;
 };
+
+/**
+ * Takes a string in the form of "-87.848374,43.334344" and returns an array of numbers 
+ * where containing both coordinates in the same order.
+ * @param {*} coordString - A string containing a lat and lon coordiante.
+ * @returns An array.
+ */
+function parseCoordinates(coordString) {
+  const coords = coordString.split(',').map(Number);
+  return coords;
+}
+/**
+ * Converts an array of numbers containing two coordinates and returns string
+ * with both coordinates in the following format: "-87.848374,43.334344". 
+ * @param {Array} coords - An array containing a lat and lon coordinate in index 0 and 1.
+ * @returns The formatted string.
+ */
+function stringifyCoordinates(coords) {
+  return coords.join(',');
+}
+
+async function generateRectangleRoute(startPoint, length, width) {
+  // Convert side lengths from km to degree
+  const lengthInLat = width / 111.32; // convert km to degree for latitude
+  const lengthInLng = length / (111.32 * Math.cos(startPoint[1] * Math.PI / 180)); // convert km to degree for longitude
+
+  const secondPoint = [`${startPoint[0] + lengthInLng},${startPoint[1]}`];
+  const thirdPoint = [`${startPoint[0] + lengthInLng},${startPoint[1] + lengthInLat}`];
+  const fourthPoint = [`${startPoint[0]},${startPoint[1] + lengthInLat}`];
+  startPoint = [`${startPoint[0]},${startPoint[1]}`];
+  const points = [startPoint, secondPoint, thirdPoint, fourthPoint, startPoint];
+  const originalCoordinates = points.slice(0, -1).map((point) => parseCoordinates(point[0]));
+
+  points.forEach(async (point) => {
+    try {
+      const tempPoint = parseCoordinates(point);
+      const lat = tempPoint[1];
+      const lon = tempPoint[0];
+      const landUse = await getLandUseData(lat, lon);
+      if (!PUBLIC_LAND_USE.includes(landUse)) {
+        const address = await coordinatesToAddress(lat, lon);
+        const publicCoordinates = await generateCoord(address);
+        tempPoint[0] = publicCoordinates.longitude;
+        tempPoint[1] = publicCoordinates.latitude;
+        point = stringifyCoordinates(tempPoint);
+      }
+    } catch (error) {
+    }
+  });
+  
+  const routeCoordinates = await connectPointsWithRoutes(points);
+  const response = {};
+  response.route = {
+    type: 'Feature',
+    properties: {},
+    geometry: {
+      type: 'LineString',
+      coordinates: routeCoordinates,
+    },
+  };
+  response.originalCoordinates = {
+    type: 'Feature',
+    properties: {},
+    geometry: {
+      type: 'LineString',
+      coordinates: originalCoordinates,
+    },
+  };
+  return response;
+}
 
 module.exports = {
   generateCoord,
   generateDistanceRoute,
   getLandUseData,
   coordinatesToAddress,
+  generateRectangleRoute,
 };
