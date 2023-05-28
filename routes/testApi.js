@@ -37,10 +37,26 @@ const generateRectangleRouteAPI = async (req, res) => {
     logger.info('Error occured while generating rectangle route.');
     res.json({ message: error.message }).status(400);
   }
+};
 
+const getDistanceAPI = (req, res) => {
+  try {
+    const { latOne } = req.query;
+    const { lonOne } = req.query;
+    const { latTwo } = req.query;
+    const { lonTwo } = req.query;
+    logger.info(`Calculating distance between lat 1: ${latOne} lon 1: ${lonOne}, lat 2: ${latTwo} lon 2: ${lonTwo}`);
+    const result = util.getDistanceFromLatLonInKm(latOne, lonOne, latTwo, lonTwo);
+    logger.info(`Distance calculated: ${result}`);
+    res.send(result);
+  } catch (error) {
+    logger.info(`Error occured while calculating the distance: ${error.message}`);
+    res.json({ message: error.message }).status(400);
+  }
 };
 module.exports = {
   generateCoordAPI,
   getLandUseDataAPI,
   generateRectangleRouteAPI,
+  getDistanceAPI,
 };
