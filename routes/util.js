@@ -114,7 +114,7 @@ const getLandUseData = async (latitude, longitude) => {
 };
 
 /**
- * Takes a string in the form of "-87.848374,43.334344" and returns an array of numbers 
+ * Takes a string in the form of "-87.848374,43.334344" and returns an array of numbers
  * where containing both coordinates in the same order.
  * @param {*} coordString - A string containing a lat and lon coordiante.
  * @returns An array.
@@ -125,7 +125,7 @@ function parseCoordinates(coordString) {
 }
 /**
  * Converts an array of numbers containing two coordinates and returns string
- * with both coordinates in the following format: "-87.848374,43.334344". 
+ * with both coordinates in the following format: "-87.848374,43.334344".
  * @param {Array} coords - An array containing a lat and lon coordinate in index 0 and 1.
  * @returns The formatted string.
  */
@@ -164,10 +164,8 @@ async function generateRectangleRoute(startPoint, length, width) {
       }
     } catch (error) {
     }
-  })
+  });
 
-
-  
   const routeCoordinates = await connectPointsWithRoutes(points);
   const response = {};
   response.route = {
@@ -189,10 +187,24 @@ async function generateRectangleRoute(startPoint, length, width) {
   return response;
 }
 
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+  const deg2rad = (deg) => deg * (Math.PI / 180);
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+    + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2))
+    * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in km
+  return d;
+}
+
 module.exports = {
   generateCoord,
   generateDistanceRoute,
   getLandUseData,
   coordinatesToAddress,
   generateRectangleRoute,
+  getDistanceFromLatLonInKm,
 };
