@@ -1,5 +1,8 @@
 const express = require('express');
 const cors = require('cors');
+const logger = require('./logger');
+
+logger.info('hello world!');
 
 const router = require('./routes/index');
 
@@ -11,7 +14,7 @@ app.use(router);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-console.log('started!');
+logger.info('started!');
 app.listen(port, () => {
-  console.log(`Server is listening at http://localhost:${port}`);
+  logger.info(`Server is listening at http://localhost:${port}`);
 });

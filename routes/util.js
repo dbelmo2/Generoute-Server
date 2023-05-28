@@ -3,6 +3,7 @@ const NodeGeocoder = require('node-geocoder');
 const turf = require('@turf/turf');
 const axios = require('axios');
 
+const logger = require('../logger');
 const config = require('../config.json');
 const keys = require('../keys.json');
 
@@ -28,7 +29,7 @@ const generateCoord = async (address) => {
     const { latitude, longitude } = results[0];
     return { latitude, longitude };
   } catch (error) {
-    console.log(error.message);
+    logger.info(error.message);
   }
 };
 
@@ -75,14 +76,14 @@ async function connectPointsWithRoutes(points) {
   const coordinates = points.map((point) => point.join(',')).join(';');
   let response;
   let data;
-  console.log('Coordinates:');
-  console.log(coordinates);
+  logger.info('Coordinates:');
+  logger.info(coordinates);
   try {
     response = await axios.get(`${directionsBaseUrl}/${coordinates}?geometries=geojson&access_token=${keys.MAPBOX}`);
     data = response.data;
   } catch (error) {
-    console.log(`Error when calling Mapbox Directions API: ${error.message}`);
-    console.log(JSON.stringify(error.response?.data));
+    logger.info(`Error when calling Mapbox Directions API: ${error.message}`);
+    logger.info(JSON.stringify(error.response?.data));
     throw error;
   }
   return data.routes[0].geometry.coordinates;
@@ -105,8 +106,8 @@ const getLandUseData = async (latitude, longitude) => {
     const response = await axios.get(`${OVERPASS_INTERPRETER_API}${encodeURIComponent(overpassQuery)}`);
     landuse = response.data.elements[1]?.tags.landuse; // TODO: Refactor to iterate all elements and search for landuse?
   } catch (error) {
-    console.log(`Error when calling OverPass API: ${error.message}`);
-    console.log(JSON.stringify(error.response?.data));
+    logger.info(`Error when calling OverPass API: ${error.message}`);
+    logger.info(JSON.stringify(error.response?.data));
     throw error;
   }
   return landuse;
@@ -145,6 +146,10 @@ async function generateRectangleRoute(startPoint, length, width) {
   const originalCoordinates = points.slice(0, -1).map((point) => parseCoordinates(point[0]));
 
   points.forEach(async (point) => {
+
+  });
+
+  points = points.map(async (point) => {
     try {
       const tempPoint = parseCoordinates(point);
       const lat = tempPoint[1];
@@ -159,7 +164,9 @@ async function generateRectangleRoute(startPoint, length, width) {
       }
     } catch (error) {
     }
-  });
+  })
+
+
   
   const routeCoordinates = await connectPointsWithRoutes(points);
   const response = {};

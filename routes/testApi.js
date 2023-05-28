@@ -1,4 +1,5 @@
 // api functions for testing
+const logger = require('../logger');
 const util = require('./util');
 
 const getLandUseDataAPI = async (req, res) => {
@@ -6,7 +7,7 @@ const getLandUseDataAPI = async (req, res) => {
     const result = await util.getLandUseData(req.query.latitude, req.query.longitude);
     res.send(result);
   } catch (error) {
-    console.log(error);
+    logger.info(error);
     res.send(error.message).status(400);
   }
 };
@@ -22,18 +23,18 @@ const generateCoordAPI = async (req, res) => {
 
 const generateRectangleRouteAPI = async (req, res) => {
   try {
-    console.log(`Received address: ${req.query.address}`);
+    logger.info(`Received address: ${req.query.address}`);
     const startCoords = await util.generateCoord(req.query.address);
-    console.log('start coordinates');
-    console.log(startCoords);
+    logger.info('start coordinates');
+    logger.info(startCoords);
     const kmInMile = 1.60934;
     const lengthInKm = req.query.length * kmInMile;
-    console.log(`Converted length of ${req.query.length} miles to ${lengthInKm} Km`);
-    console.log(`Length for each side: ${lengthInKm / 4} KM`);
+    logger.info(`Converted length of ${req.query.length} miles to ${lengthInKm} Km`);
+    logger.info(`Length for each side: ${lengthInKm / 4} KM`);
     const routeData = await util.generateRectangleRoute([startCoords.longitude, startCoords.latitude], lengthInKm / 4, lengthInKm / 4);
     res.json(routeData);
   } catch (error) {
-    console.log('Error occured while generating rectangle route.');
+    logger.info('Error occured while generating rectangle route.');
     res.json({ message: error.message }).status(400);
   }
 
