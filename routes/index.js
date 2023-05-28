@@ -12,5 +12,6 @@ router.get('/', (req, res) => {
 router.get('/coordinates', testApi.generateCoordAPI);
 router.get('/landUse', testApi.getLandUseDataAPI);
 router.get('/rectangleRoute', testApi.generateRectangleRouteAPI);
+router.get('/distance', testApi.getDistanceAPI);
 
 module.exports = router;
