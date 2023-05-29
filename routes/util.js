@@ -115,7 +115,7 @@ const getLandUseData = async (latitude, longitude) => {
 
 /**
  * Takes a string in the form of "-87.848374,43.334344" and returns an array of numbers
- * where containing both coordinates in the same order.
+ * containing both coordinates in the same order.
  * @param {*} coordString - A string containing a lat and lon coordiante.
  * @returns An array.
  */
@@ -142,16 +142,12 @@ async function generateRectangleRoute(startPoint, length, width) {
   const thirdPoint = [`${startPoint[0] + lengthInLng},${startPoint[1] + lengthInLat}`];
   const fourthPoint = [`${startPoint[0]},${startPoint[1] + lengthInLat}`];
   startPoint = [`${startPoint[0]},${startPoint[1]}`];
-  const points = [startPoint, secondPoint, thirdPoint, fourthPoint, startPoint];
+  let points = [startPoint, secondPoint, thirdPoint, fourthPoint, startPoint];
   const originalCoordinates = points.slice(0, -1).map((point) => parseCoordinates(point[0]));
 
-  points.forEach(async (point) => {
-
-  });
-
-  points = points.map(async (point) => {
+  const promises = points.map(async (point) => {
     try {
-      const tempPoint = parseCoordinates(point);
+      const tempPoint = parseCoordinates(point[0]);
       const lat = tempPoint[1];
       const lon = tempPoint[0];
       const landUse = await getLandUseData(lat, lon);
@@ -161,11 +157,18 @@ async function generateRectangleRoute(startPoint, length, width) {
         tempPoint[0] = publicCoordinates.longitude;
         tempPoint[1] = publicCoordinates.latitude;
         point = stringifyCoordinates(tempPoint);
+        return [point];
       }
     } catch (error) {
+      logger.error(`${error.name}: ${error.message}`);
+      return point;
     }
   });
 
+
+
+  points = await Promise.all(promises);
+  console.log(points)
   const routeCoordinates = await connectPointsWithRoutes(points);
   const response = {};
   response.route = {
@@ -187,7 +190,7 @@ async function generateRectangleRoute(startPoint, length, width) {
   return response;
 }
 
-function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
   const deg2rad = (deg) => deg * (Math.PI / 180);
   const R = 6371; // Radius of the earth in km
   const dLat = deg2rad(lat2 - lat1);
@@ -198,7 +201,22 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const d = R * c; // Distance in km
   return d;
-}
+};
+
+const getRouteDistance = (routeCoordinates) => {
+  logger.debug(`Calculating distance for route with coordinates: ${JSON.stringify(routeCoordinates)}`);
+  let i;
+  let totalDistance = 0;
+  for (i = 0; i < routeCoordinates.length - 1; i += 1) {
+    const latOne = routeCoordinates[i][1];
+    const lonOne = routeCoordinates[i][0];
+    const latTwo = routeCoordinates[i + 1][1];
+    const lonTwo = routeCoordinates[i + 1][0];
+    totalDistance += getDistanceFromLatLonInKm(latOne, lonOne, latTwo, lonTwo);
+  }
+  logger.debug(`distance calculated: ${totalDistance}`);
+  return `${totalDistance}`;
+};
 
 module.exports = {
   generateCoord,
@@ -207,4 +225,5 @@ module.exports = {
   coordinatesToAddress,
   generateRectangleRoute,
   getDistanceFromLatLonInKm,
+  getRouteDistance,
 };
