@@ -35,7 +35,7 @@ prefix.apply(log, {
 const getFunctionPrefix = (functionName) => {
   let result = '';
   if (functionName) {
-    result = `[FUNCTION: ${functionName}] `
+    result = `[FUNCTION: ${functionName}] `;
   }
   return result;
 };
@@ -48,40 +48,40 @@ const getFilePrefix = (fileName) => {
   return result;
 };
 
-const info = (message, functionName, fileName) => {
+function info(message, fileName, functionName = info.caller.name) {
   const functionPrefix = getFunctionPrefix(functionName);
   const filePrefix = getFilePrefix(fileName);
   const finalMessage = `${functionPrefix}${filePrefix}${message}`;
   log.info(finalMessage);
-};
+}
 
-const trace = (message, functionName, fileName) => {
+function trace(message, fileName, functionName = trace.caller.name) {
   const functionPrefix = getFunctionPrefix(functionName);
   const filePrefix = getFilePrefix(fileName);
   const finalMessage = `${functionPrefix}${filePrefix}${message}`;
   log.trace(finalMessage);
-};
+}
 
-const debug = (message, functionName, fileName) => {
+function debug(message, fileName, functionName = debug.caller.name) {
   const functionPrefix = getFunctionPrefix(functionName);
   const filePrefix = getFilePrefix(fileName);
   const finalMessage = `${functionPrefix}${filePrefix}${message}`;
   log.debug(finalMessage);
-};
+}
 
-const warn = (message, functionName, fileName) => {
+function warn(message, fileName, functionName = warn.caller.name) {
   const functionPrefix = getFunctionPrefix(functionName);
   const filePrefix = getFilePrefix(fileName);
   const finalMessage = `${functionPrefix}${filePrefix}${message}`;
   log.warn(finalMessage);
-};
+}
 
-const error = (message, functionName, fileName) => {
+function error(message, fileName, functionName = error.caller.name) {
   const functionPrefix = getFunctionPrefix(functionName);
   const filePrefix = getFilePrefix(fileName);
   const finalMessage = `${functionPrefix}${filePrefix}${message}`;
   log.error(finalMessage);
-};
+}
 
 module.exports = {
   trace,

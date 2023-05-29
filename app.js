@@ -13,6 +13,6 @@ app.use(router);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.listen(port, () => {
-  logger.info(`Server is listening at http://localhost:${port}`, undefined, 'app.js');
+app.listen(port, function expressListener(){
+  logger.info(`Server is listening at http://localhost:${port}`, 'app.js');
 });

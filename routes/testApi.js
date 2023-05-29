@@ -25,7 +25,7 @@ const generateCoordAPI = async (req, res) => {
 
 const generateRectangleRouteAPI = async (req, res) => {
   try {
-    logger.info(`Received address: ${req.query.address}`, generateRectangleRouteAPI.name, FILE_NAME);
+    logger.info(`Received address: ${req.query.address}`, FILE_NAME);
     const startCoords = await util.generateCoord(req.query.address);
     logger.info('start coordinates');
     logger.info(startCoords);
@@ -45,10 +45,9 @@ const generateRectangleRouteAPI = async (req, res) => {
 
 const getDistanceAPI = (req, res) => {
   try {
-    const { latOne } = req.query;
-    const { lonOne } = req.query;
-    const { latTwo } = req.query;
-    const { lonTwo } = req.query;
+    const {
+      latOne, latTwo, lonOne, lonTwo,
+    } = req.query;
     logger.info(`Calculating distance between lat 1: ${latOne} lon 1: ${lonOne}, lat 2: ${latTwo} lon 2: ${lonTwo}`);
     const result = util.getDistanceFromLatLonInKm(latOne, lonOne, latTwo, lonTwo);
     logger.info(`Distance calculated: ${result}`);
