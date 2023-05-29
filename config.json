@@ -1,4 +1,4 @@
 {
   "PUBLIC_LAND_USE": ["allotments", "forest", "recreation_ground", "meadow"],
-  "LOG_LEVEL": "info"
+  "LOG_LEVEL": "trace"
 }
